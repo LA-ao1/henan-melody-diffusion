@@ -1,4 +1,4 @@
-# 河南民歌旋律基因编码与掩码扩散项目（Stage 1 & Stage 2）
+# 河南民歌旋律基因编码与掩码扩散项目（Stage 1 ~ Stage 3）
 
 小组期中研究课题：**3 旋律的扰动与重建**  
 技术路线：**河南民歌 `2/4` 子集 + 十六分音符时间网格（每小节 8 步，`L = 64`） + 掩码扩散模型（Masked Diffusion）**
@@ -20,7 +20,9 @@
   - `prepare_henan.py`：阶段一数据过滤、按原曲 ID 防泄漏划分、切片编码与 100% 无损往返校验脚本
   - `diffusion.py`：阶段二掩码扩散核心模块（`HenanMelodyDataset`、`MaskedDiffusion` 前向加噪 $\gamma_t = t/T$、掩码交叉熵损失、精确马尔可夫后验 `1/t` 反向采样）
   - `preview_stage2.py`：阶段二单元测试与前向渐进掩码预览导出脚本
-- `data/processed/`：已预处理好的标准数据集，可直接用于阶段二~四训练
+  - `model.py`：阶段三双向 Transformer 去噪网络（`MelodyTransformerDenoiser`，融合词元、全局位置、`pos % 8` 小节拍点、正弦时间步四路嵌入）
+  - `check_stage3.py`：阶段三双向注意力、梯度流、采样闭环与训练耗时基准验证脚本
+- `data/processed/`：已预处理好的标准数据集，可直接用于阶段四训练
   - `train.npy`：`(2390, 64)`，来自 409 首曲目（步长 2 小节）
   - `val.npy`：`(99, 64)`，来自 51 首曲目（步长 8 小节，不重叠）
   - `test.npy`：`(116, 64)`，来自 51 首曲目（步长 8 小节，不重叠）
@@ -44,8 +46,6 @@
 
 ## 本地运行与复现说明
 
-如只需直接开始阶段二/三开发，仓库内的 `data/processed/*.npy` 已准备好，无需重新下载原始压缩包。
-
 1. 安装依赖：
    ```bash
    pip install -r requirements.txt
@@ -54,7 +54,11 @@
    ```bash
    python3 -m melody_diffusion.preview_stage2
    ```
-3. （可选）从原始数据重跑阶段一：从 [Anthology-of-Chinese-Folk-Songs (`v261104`)](https://github.com/m-july/Anthology-of-Chinese-Folk-Songs/releases/tag/v261104) 下载 `henan.jsonl` 与 `ACFS-v261103-scores-henan.zip` 放入 `data/raw/`，运行：
+3. 复现阶段三模型结构与前反向连通性自检：
+   ```bash
+   python3 -m melody_diffusion.check_stage3
+   ```
+4. （可选）从原始数据重跑阶段一：从 [Anthology-of-Chinese-Folk-Songs (`v261104`)](https://github.com/m-july/Anthology-of-Chinese-Folk-Songs/releases/tag/v261104) 下载 `henan.jsonl` 与 `ACFS-v261103-scores-henan.zip` 放入 `data/raw/`，运行：
    ```bash
    python3 -m melody_diffusion.prepare_henan
    ```
