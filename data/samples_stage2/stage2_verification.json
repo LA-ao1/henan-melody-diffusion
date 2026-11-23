@@ -1,0 +1,115 @@
+{
+  "unit_checks": {
+    "T": 50,
+    "schedule": "linear",
+    "schedule_check": {
+      "t=1": {
+        "theoretical_mask_rate": 0.02,
+        "empirical_mask_rate": 0.0242,
+        "abs_diff": 0.0042
+      },
+      "t=5": {
+        "theoretical_mask_rate": 0.1,
+        "empirical_mask_rate": 0.099,
+        "abs_diff": 0.001
+      },
+      "t=15": {
+        "theoretical_mask_rate": 0.3,
+        "empirical_mask_rate": 0.3018,
+        "abs_diff": 0.0018
+      },
+      "t=25": {
+        "theoretical_mask_rate": 0.5,
+        "empirical_mask_rate": 0.5027,
+        "abs_diff": 0.0027
+      },
+      "t=35": {
+        "theoretical_mask_rate": 0.7,
+        "empirical_mask_rate": 0.7011,
+        "abs_diff": 0.0011
+      },
+      "t=45": {
+        "theoretical_mask_rate": 0.9,
+        "empirical_mask_rate": 0.9022,
+        "abs_diff": 0.0023
+      },
+      "t=50": {
+        "theoretical_mask_rate": 1.0,
+        "empirical_mask_rate": 1.0,
+        "abs_diff": 0.0
+      }
+    },
+    "uniform_dummy_loss": 3.6889,
+    "reverse_final_mask_count": 0
+  },
+  "preview": {
+    "sample_info": {
+      "split": "test",
+      "index": 0,
+      "song_id": "henan:97",
+      "title": "硪号把门号",
+      "category": "号子",
+      "header_tonic": "1=♯F",
+      "start_bar": 35,
+      "window_in_song": 0
+    },
+    "progression": [
+      {
+        "t": 0,
+        "noise_pct": 0.0,
+        "masked_tokens": 0,
+        "actual_mask_rate": 0.0,
+        "pentatonic_ratio": 1.0,
+        "onset_ratio": 0.2188
+      },
+      {
+        "t": 5,
+        "noise_pct": 10.0,
+        "masked_tokens": 7,
+        "actual_mask_rate": 0.1094,
+        "pentatonic_ratio": 1.0,
+        "onset_ratio": 0.2031
+      },
+      {
+        "t": 15,
+        "noise_pct": 30.0,
+        "masked_tokens": 19,
+        "actual_mask_rate": 0.2969,
+        "pentatonic_ratio": 1.0,
+        "onset_ratio": 0.1094
+      },
+      {
+        "t": 25,
+        "noise_pct": 50.0,
+        "masked_tokens": 40,
+        "actual_mask_rate": 0.625,
+        "pentatonic_ratio": 1.0,
+        "onset_ratio": 0.0625
+      },
+      {
+        "t": 35,
+        "noise_pct": 70.0,
+        "masked_tokens": 41,
+        "actual_mask_rate": 0.6406,
+        "pentatonic_ratio": 1.0,
+        "onset_ratio": 0.0625
+      },
+      {
+        "t": 45,
+        "noise_pct": 90.0,
+        "masked_tokens": 56,
+        "actual_mask_rate": 0.875,
+        "pentatonic_ratio": 0.0,
+        "onset_ratio": 0.0
+      },
+      {
+        "t": 50,
+        "noise_pct": 100.0,
+        "masked_tokens": 64,
+        "actual_mask_rate": 1.0,
+        "pentatonic_ratio": 0.0,
+        "onset_ratio": 0.0
+      }
+    ]
+  }
+}
