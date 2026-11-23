@@ -1,0 +1,92 @@
+{
+  "province": "henan",
+  "meter": "2/4",
+  "grid_resolution": "16th_note (8 steps/bar)",
+  "seq_len": 64,
+  "vocab_size": 40,
+  "vocab_spec": {
+    "0": "REST",
+    "1": "HOLD",
+    "2..38": "MIDI 48..84 (token = midi - 46)",
+    "39": "[MASK]"
+  },
+  "seed": 42,
+  "train_stride_bars": 2,
+  "eval_stride_bars": 8,
+  "song_counts": {
+    "henan_total": 987,
+    "henan_2_4": 866,
+    "songs_with_clean_8bar_windows": 511,
+    "train_songs": 409,
+    "val_songs": 51,
+    "test_songs": 51
+  },
+  "window_counts": {
+    "train": 2390,
+    "val": 99,
+    "test": 116
+  },
+  "split_metrics": {
+    "train": {
+      "num_sequences": 2390,
+      "total_steps": 152960,
+      "pentatonic_ratio": 0.9718408090318643,
+      "onset_ratio": 0.39093880753138077,
+      "hold_ratio": 0.5089435146443515,
+      "rest_ratio": 0.10011767782426778,
+      "mask_ratio": 0.0,
+      "orphan_hold_count": 0,
+      "orphan_hold_ratio": 0.0
+    },
+    "val": {
+      "num_sequences": 99,
+      "total_steps": 6336,
+      "pentatonic_ratio": 0.9851984385165907,
+      "onset_ratio": 0.41887626262626265,
+      "hold_ratio": 0.5514520202020202,
+      "rest_ratio": 0.029671717171717172,
+      "mask_ratio": 0.0,
+      "orphan_hold_count": 0,
+      "orphan_hold_ratio": 0.0
+    },
+    "test": {
+      "num_sequences": 116,
+      "total_steps": 7424,
+      "pentatonic_ratio": 0.9751236749116607,
+      "onset_ratio": 0.4140625,
+      "hold_ratio": 0.5389278017241379,
+      "rest_ratio": 0.04700969827586207,
+      "mask_ratio": 0.0,
+      "orphan_hold_count": 0,
+      "orphan_hold_ratio": 0.0
+    }
+  },
+  "test_musicxml_roundtrip_exact": "116/116",
+  "exported_samples": [
+    {
+      "stem": "sample_01_henan_97_bar35",
+      "song_id": "henan:97",
+      "title": "硪号把门号"
+    },
+    {
+      "stem": "sample_02_henan_884_bar0",
+      "song_id": "henan:884",
+      "title": "天上黄河几道湾"
+    },
+    {
+      "stem": "sample_03_henan_562_bar0",
+      "song_id": "henan:562",
+      "title": "卖货郎"
+    },
+    {
+      "stem": "sample_04_henan_247_bar31",
+      "song_id": "henan:247",
+      "title": "十姊妹打架"
+    },
+    {
+      "stem": "sample_05_henan_689_bar1",
+      "song_id": "henan:689",
+      "title": "改造二流子"
+    }
+  ]
+}
