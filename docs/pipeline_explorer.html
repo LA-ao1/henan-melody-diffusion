@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>河南民歌掩码扩散模型：全流程交互式图解</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    :root {
+      --background: #f8fafc;
+      --foreground: #0f172a;
+      --card: #ffffff;
+      --border: #cbd5e1;
+      --card-border: #e2e8f0;
+      --muted-foreground: #64748b;
+      --primary: #2563eb;
+      --primary-foreground: #ffffff;
+      --secondary: #f1f5f9;
+      --secondary-foreground: #334155;
+      --link: #2563eb;
+      --chart-1: #2563eb;
+      --chart-2: #10b981;
+      --warning: #f59e0b;
+      --error: #ef4444;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: #0b1120;
+        --foreground: #e2e8f0;
+        --card: #111827;
+        --border: #334155;
+        --card-border: #1e293b;
+        --muted-foreground: #94a3b8;
+        --primary: #3b82f6;
+        --primary-foreground: #ffffff;
+        --secondary: #1e293b;
+        --secondary-foreground: #e2e8f0;
+        --link: #60a5fa;
+        --chart-1: #60a5fa;
+        --chart-2: #34d399;
+        --warning: #fbbf24;
+        --error: #f87171;
+      }
+    }
+  </style>
+</head>
+<body class="bg-[var(--background)] text-[var(--foreground)] antialiased min-h-screen p-4 md:p-6">
+  <div class="max-w-6xl mx-auto space-y-4">
+    <!-- Header -->
+    <header class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 md:p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+      <div>
+        <div class="flex items-center gap-2 text-xs text-[var(--muted-foreground)] mb-1">
+          <span class="px-2 py-0.5 rounded bg-[var(--secondary)] text-[var(--secondary-foreground)] font-medium">期中课题 · 旋律的扰动与重建</span>
+          <span>河南 2/4 民歌 · 十六分音符 · 掩码扩散</span>
+        </div>
+        <h1 class="text-xl font-bold tracking-tight">全流程交互式图解与模型成果试听</h1>
+      </div>
+      <div class="flex flex-wrap items-center gap-2">
+        <button id="btn-stop-audio" class="px-3 py-1.5 rounded-lg border border-[var(--border)] text-xs font-medium hover:bg-[var(--secondary)] transition-colors hidden">■ 停止播放</button>
+        <a href="https://github.com/LA-ao1/henan-melody-diffusion/archive/refs/heads/main.zip" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] text-xs font-medium hover:opacity-90 transition-opacity">⬇ 下载项目与模型 ZIP</a>
+      </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="flex flex-wrap gap-1.5 bg-[var(--card)] border border-[var(--border)] rounded-xl p-1.5" id="nav-tabs">
+      <button data-tab="overview" class="tab-btn px-3 py-2 rounded-lg text-xs font-medium transition-colors">0. 全流程总览与试用</button>
+      <button data-tab="stage1" class="tab-btn px-3 py-2 rounded-lg text-xs font-medium transition-colors">阶段一：基因编码与划分</button>
+      <button data-tab="stage2" class="tab-btn px-3 py-2 rounded-lg text-xs font-medium transition-colors">阶段二：掩码加噪规则</button>
+      <button data-tab="stage3" class="tab-btn px-3 py-2 rounded-lg text-xs font-medium transition-colors">阶段三：去噪大脑内部</button>
+      <button data-tab="stage4" class="tab-btn px-3 py-2 rounded-lg text-xs font-medium transition-colors">阶段四：100轮训练与真实重建</button>
+    </nav>
+
+    <!-- TAB 0: OVERVIEW -->
+    <section id="tab-overview" class="tab-panel space-y-4">
+      <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5 space-y-4">
+        <h2 class="text-base font-semibold">四步走通整个模型（点击任意卡片查看对应细节）</h2>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <button onclick="switchTab('stage1')" class="text-left p-4 rounded-xl border border-[var(--border)] hover:border-[var(--primary)] transition-colors space-y-2">
+            <div class="text-xs font-semibold text-[var(--primary)]">STAGE 1 · 数据与编码</div>
+            <div class="font-semibold text-sm">乐谱 → 整数基因链</div>
+            <p class="text-xs text-[var(--muted-foreground)] leading-relaxed">筛选河南 866 首 2/4 民歌中 511 首干净曲目，按十六分音符切为 64 步整数矩阵 `(2390, 64)`，100% 无损可逆。</p>
+          </button>
+          <button onclick="switchTab('stage2')" class="text-left p-4 rounded-xl border border-[var(--border)] hover:border-[var(--primary)] transition-colors space-y-2">
+            <div class="text-xs font-semibold text-[var(--primary)]">STAGE 2 · 随机加噪</div>
+            <div class="font-semibold text-sm">贴上 [MASK] 黑胶带</div>
+            <p class="text-xs text-[var(--muted-foreground)] leading-relaxed">按线性进度 `γ_t = t/50` 随机把音符盖成 `39 ([MASK])`；反向生成时每步按精确后验 `1/t` 揭开。</p>
+          </button>
+          <button onclick="switchTab('stage3')" class="text-left p-4 rounded-xl border border-[var(--border)] hover:border-[var(--primary)] transition-colors space-y-2">
+            <div class="text-xs font-semibold text-[var(--primary)]">STAGE 3 · 神经网络</div>
+            <div class="font-semibold text-sm">双向 Transformer 填空</div>
+            <p class="text-xs text-[var(--muted-foreground)] leading-relaxed">融合音符、位置、`pos%8` 拍点与时间步 4 路线索，双向看前后文猜被遮住格子的 40 维概率。</p>
+          </button>
+          <button onclick="switchTab('stage4')" class="text-left p-4 rounded-xl border border-[var(--border)] hover:border-[var(--primary)] transition-colors space-y-2">
+            <div class="text-xs font-semibold text-[var(--primary)]">STAGE 4 · 训练与成果</div>
+            <div class="font-semibold text-sm">100轮收敛与重建</div>
+            <p class="text-xs text-[var(--muted-foreground)] leading-relaxed">在 90 轮达到最优 `val_loss = 1.2426`，生成曲五声纯度 `95.5%~99.6%`，无抄袭且可按比例重建。</p>
+          </button>
+        </div>
+      </div>
+
+      <!-- Teammate Quick Start -->
+      <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <h2 class="text-base font-semibold">给队友：如何下载并亲自试用已训好的模型？</h2>
+          <a href="https://github.com/LA-ao1/henan-melody-diffusion" target="_blank" rel="noopener noreferrer" class="text-xs text-[var(--link)] hover:underline">打开 GitHub 仓库 →</a>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+          <div class="p-3.5 rounded-lg border border-[var(--card-border)] space-y-2">
+            <div class="font-semibold">第 1 步：一键下载代码 + 数据 + 训练权重</div>
+            <p class="text-[var(--muted-foreground)]">仓库里已经打包上传了第 90 轮最优权重 `checkpoints/best_model.pt`（约 6.8 MB），直接点上方 **下载项目与模型 ZIP** 按钮解压即可，无需再重新训练。</p>
+            <div class="font-mono text-[11px] p-2 rounded border border-[var(--card-border)] overflow-x-auto">git clone https://github.com/LA-ao1/henan-melody-diffusion.git</div>
+          </div>
+          <div class="p-3.5 rounded-lg border border-[var(--card-border)] space-y-2">
+            <div class="font-semibold">第 2 步：一条命令试用生成 / 重建并导出音频</div>
+            <p class="text-[var(--muted-foreground)]">安装依赖后运行交互脚本，可现场生成新民歌或把任意测试曲掩码损坏后重建，自动导出 `.wav`、`.mid` 和 `.musicxml` 乐谱：</p>
+            <div class="font-mono text-[11px] p-2 rounded border border-[var(--card-border)] space-y-1 overflow-x-auto">
+              <div>pip install -r requirements.txt</div>
+              <div>python3 -m melody_diffusion.try_model</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 1: STAGE 1 -->
+    <section id="tab-stage1" class="tab-panel hidden space-y-4">
+      <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 class="text-base font-semibold">阶段一：把乐谱切分成 64 个十六分音符“基因编码”</h2>
+            <p class="text-xs text-[var(--muted-foreground)] mt-0.5">示例测试曲：《天上黄河几道湾》（`henan:884` · 灯歌 · 2/4 拍 · 每小节 8 格 · 共 8 小节）。点击下方任意格子查看编码细节。</p>
+          </div>
+          <button id="btn-play-s1" class="px-3 py-1.5 rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] text-xs font-medium hover:opacity-90">▶ 试听编码还原原曲</button>
+        </div>
+
+        <!-- 64-slot clickable bar grid (8 steps = 1 bar of 2/4) -->
+        <div class="space-y-2">
+          <div id="s1-grid" class="grid grid-cols-8 gap-1 text-center text-[11px]"></div>
+          <div id="s1-inspector" class="p-3 rounded-lg border border-[var(--card-border)] flex flex-wrap items-center gap-4 text-xs">
+            <span class="text-[var(--muted-foreground)]">点击上方任意格子查看字段拆解</span>
+          </div>
+        </div>
+
+        <div class="rounded-lg border border-[var(--card-border)] p-2">
+          <canvas id="canvas-s1" class="w-full h-[150px] block"></canvas>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+          <div class="p-3 rounded-lg border border-[var(--card-border)]">
+            <div class="text-[var(--muted-foreground)]">数据清洗漏斗</div>
+            <div class="font-semibold text-sm mt-1">987 → 866 → 511 首</div>
+            <div class="text-[var(--muted-foreground)] mt-0.5">仅留无瑕疵 2/4 连续 8 小节</div>
+          </div>
+          <div class="p-3 rounded-lg border border-[var(--card-border)]">
+            <div class="text-[var(--muted-foreground)]">防泄漏划分 (按歌 ID)</div>
+            <div class="font-semibold text-sm mt-1">2390 / 99 / 116 条</div>
+            <div class="text-[var(--muted-foreground)] mt-0.5">409 训 / 51 验 / 51 测</div>
+          </div>
+          <div class="p-3 rounded-lg border border-[var(--card-border)]">
+            <div class="text-[var(--muted-foreground)]">原生调式确认</div>
+            <div class="font-semibold text-sm mt-1">五声纯度 97.2%</div>
+            <div class="text-[var(--muted-foreground)] mt-0.5">XML 已为首调 1=C，无需移调</div>
+          </div>
+          <div class="p-3 rounded-lg border border-[var(--card-border)]">
+            <div class="text-[var(--muted-foreground)]">无损往返校验</div>
+            <div class="font-semibold text-sm mt-1">116 / 116 (100%)</div>
+            <div class="text-[var(--muted-foreground)] mt-0.5">导出 MusicXML 再读回零误差</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: STAGE 2 -->
+    <section id="tab-stage2" class="tab-panel hidden space-y-4">
+      <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 class="text-base font-semibold">阶段二：前向掩码扩散规则（`t = 0 → 50`）</h2>
+            <p class="text-xs text-[var(--muted-foreground)] mt-0.5">拖动步数滑块，观察前向过程如何把《天上黄河几道湾》一步步贴上 `39 ([MASK])` 黑胶带，以及反向时对应每步揭开概率。</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button id="btn-s2-reroll" class="px-2.5 py-1.5 rounded-lg border border-[var(--border)] text-xs hover:bg-[var(--secondary)]">🎲 换一次随机掩码</button>
+            <button id="btn-play-s2" class="px-3 py-1.5 rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] text-xs font-medium hover:opacity-90">▶ 试听当前掩码态</button>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-4 p-3 rounded-lg border border-[var(--card-border)]">
+          <div class="flex-1 min-w-[220px] flex items-center gap-3">
+            <label for="s2-slider" class="text-xs font-medium whitespace-nowrap" id="s2-t-label">步数 t = 25 / 50</label>
+            <input id="s2-slider" type="range" min="0" max="50" value="25" class="w-full accent-[var(--primary)] cursor-pointer" />
+          </div>
+          <div class="flex flex-wrap gap-3 text-xs">
+            <span>理论掩码率 γ_t: <strong id="s2-gamma" class="font-mono">50%</strong></span>
+            <span>保留率 ᾱ_t: <strong id="s2-alpha" class="font-mono">50%</strong></span>
+            <span>反向揭开概率 1/t: <strong id="s2-punmask" class="font-mono">4.0%</strong></span>
+            <span>实测遮挡: <strong id="s2-actual" class="font-mono">32/64</strong></span>
+          </div>
+        </div>
+
+        <div class="rounded-lg border border-[var(--card-border)] p-2">
+          <canvas id="canvas-s2" class="w-full h-[155px] block"></canvas>
+        </div>
+
+        <div id="s2-seq-text" class="p-3 rounded-lg border border-[var(--card-border)] font-mono text-[11px] leading-relaxed break-all"></div>
+      </div>
+    </section>
+
+    <!-- TAB 3: STAGE 3 -->
+    <section id="tab-stage3" class="tab-panel hidden space-y-4">
+      <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5 space-y-4">
+        <div>
+          <h2 class="text-base font-semibold">阶段三：去噪大脑怎么猜出被遮住的音符？（真实模型探针）</h2>
+          <p class="text-xs text-[var(--muted-foreground)] mt-0.5">网络把 4 路提示信息相加，经 3 层**双向注意力**同时看左看右，最后在每个位置输出 40 个符号的预测概率。</p>
+        </div>
+
+        <!-- 4 embeddings architecture blocks -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-2.5 text-xs">
+          <div class="p-3 rounded-lg border border-[var(--card-border)] space-y-1">
+            <div class="font-semibold">1. 词元嵌入 `tok_emb`</div>
+            <div class="text-[var(--muted-foreground)]">认出没被遮住的邻居音符是什么（如第 0 格是 `14 = C4`）。</div>
+          </div>
+          <div class="p-3 rounded-lg border border-[var(--card-border)] space-y-1">
+            <div class="font-semibold">2. 全局位置 `pos_emb`</div>
+            <div class="text-[var(--muted-foreground)]">定位 `0..63` 处于第几小节（开头起调还是末尾收束）。</div>
+          </div>
+          <div class="p-3 rounded-lg border border-[var(--card-border)] space-y-1">
+            <div class="font-semibold">3. 拍点位置 `pos % 8`</div>
+            <div class="text-[var(--muted-foreground)]">标出 2/4 拍内强弱拍位置（奇数弱分拍极易是 `HOLD` 延长）。</div>
+          </div>
+          <div class="p-3 rounded-lg border border-[var(--card-border)] space-y-1">
+            <div class="font-semibold">4. 噪声步长 `time_mlp(t)`</div>
+            <div class="text-[var(--muted-foreground)]">用正弦编码告诉网络现在有多模糊（当前 `t = 25`）。</div>
+          </div>
+        </div>
+
+        <!-- Real probe output from best_model.pt -->
+        <div class="p-4 rounded-xl border border-[var(--border)] space-y-3">
+          <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
+            <span class="font-semibold">实测案例：《天上黄河几道湾》`t=25` 时被遮住的第 1 格（前1格=C4, 后1格=D4, 真值=`1 HOLD`）</span>
+            <span class="px-2 py-0.5 rounded bg-[var(--secondary)] text-[var(--secondary-foreground)]">真实加载 `best_model.pt` 计算结果</span>
+          </div>
+          <div id="s3-bars" class="space-y-2"></div>
+          <p class="text-xs text-[var(--muted-foreground)]">可以看到：虽然第 1 格被遮成 `?`，双向网络结合前一位 `1 (C4)`、后一位 `2 (D4)` 以及 `pos % 8 = 1` 的弱拍规律，以 **63.6%** 的最高概率精准猜出它应当是 `HOLD (1)`，而且其余备选音高全部落在五声音阶 `{1, 2, 3, 5, 6,}` 内！</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: STAGE 4 -->
+    <section id="tab-stage4" class="tab-panel hidden space-y-4">
+      <!-- Curves & Checkup playback -->
+      <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 class="text-base font-semibold">阶段四成果：真实 100 轮收敛曲线 & 进化对比试听</h2>
+            <p class="text-xs text-[var(--muted-foreground)] mt-0.5">最佳验证损失 `1.2426`（第 90 轮）；点右侧按钮可听出模型从第 10 轮到第 100 轮旋律逻辑的明显进化。</p>
+          </div>
+          <div class="flex flex-wrap gap-1.5">
+            <button data-ep="10" class="btn-ep-play px-2.5 py-1.5 rounded-lg border border-[var(--border)] text-xs hover:bg-[var(--secondary)]">▶ 试听 Epoch 10</button>
+            <button data-ep="50" class="btn-ep-play px-2.5 py-1.5 rounded-lg border border-[var(--border)] text-xs hover:bg-[var(--secondary)]">▶ 试听 Epoch 50</button>
+            <button data-ep="100" class="btn-ep-play px-2.5 py-1.5 rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] text-xs font-medium hover:opacity-90">▶ 试听 Epoch 100</button>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div class="rounded-lg border border-[var(--card-border)] p-2">
+            <canvas id="canvas-loss" class="w-full h-[180px] block"></canvas>
+          </div>
+          <div class="rounded-lg border border-[var(--card-border)] p-2">
+            <canvas id="canvas-checkup" class="w-full h-[180px] block"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Real best_model.pt Gradient Reconstruction Explorer -->
+      <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 class="text-base font-semibold">真实 `best_model.pt` 梯度掩码重建实验（测试曲：《天上黄河几道湾》）</h2>
+            <p class="text-xs text-[var(--muted-foreground)] mt-0.5">切换不同掩码破坏比例，直接试听对比“原曲 vs 损坏后 vs 模型重建后”。</p>
+          </div>
+          <div class="flex flex-wrap gap-1.5" id="s4-t-buttons">
+            <button data-rt="5" class="rt-btn px-2.5 py-1 rounded border border-[var(--border)] text-xs">10% (t=5)</button>
+            <button data-rt="15" class="rt-btn px-2.5 py-1 rounded border border-[var(--border)] text-xs">30% (t=15)</button>
+            <button data-rt="25" class="rt-btn px-2.5 py-1 rounded border border-[var(--border)] text-xs">50% (t=25)</button>
+            <button data-rt="35" class="rt-btn px-2.5 py-1 rounded border border-[var(--border)] text-xs">70% (t=35)</button>
+            <button data-rt="45" class="rt-btn px-2.5 py-1 rounded border border-[var(--border)] text-xs">90% (t=45)</button>
+            <button data-rt="50" class="rt-btn px-2.5 py-1 rounded border border-[var(--border)] text-xs">100% (t=50)</button>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-between gap-2 text-xs p-3 rounded-lg border border-[var(--card-border)]">
+          <div class="flex flex-wrap gap-4">
+            <span>当前档位: <strong id="s4-rt-label" class="font-mono">50% (t=25)</strong></span>
+            <span>重建原曲吻合率: <strong id="s4-match" class="font-mono">68.8%</strong></span>
+            <span>重建五声纯度: <strong id="s4-penta" class="font-mono">100.0%</strong></span>
+          </div>
+          <div class="flex flex-wrap gap-1.5">
+            <button id="btn-play-orig" class="px-2.5 py-1 rounded border border-[var(--border)] hover:bg-[var(--secondary)]">▶ 试听原曲</button>
+            <button id="btn-play-mask" class="px-2.5 py-1 rounded border border-[var(--border)] hover:bg-[var(--secondary)]">▶ 试听掩码态</button>
+            <button id="btn-play-reco" class="px-2.5 py-1 rounded bg-[var(--primary)] text-[var(--primary-foreground)] font-medium hover:opacity-90">▶ 试听模型重建</button>
+          </div>
+        </div>
+
+        <div class="rounded-lg border border-[var(--card-border)] p-2">
+          <canvas id="canvas-s4-recon" class="w-full h-[210px] block"></canvas>
+        </div>
+        <div id="s4-jianpu-box" class="p-3 rounded-lg border border-[var(--card-border)] font-mono text-[11px] space-y-1 leading-relaxed"></div>
+      </div>
+
+      <!-- 50-step Unconditional Trajectory -->
+      <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 class="text-base font-semibold">彩蛋：看“全黑纸”如何倒推 50 步长出一首新民歌</h2>
+            <p class="text-xs text-[var(--muted-foreground)] mt-0.5">拖动进度查看 `best_model.pt` 从全 `39 ([MASK])` 一步步揭开生成完整旋律的真实轨迹快照。</p>
+          </div>
+          <button id="btn-play-traj" class="px-3 py-1.5 rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] text-xs font-medium hover:opacity-90">▶ 试听当前轨迹快照</button>
+        </div>
+        <div class="flex items-center gap-3">
+          <span id="traj-label" class="text-xs font-medium whitespace-nowrap w-32">步数 t = 50 (全掩码)</span>
+          <input id="traj-slider" type="range" min="0" max="7" value="0" class="w-full accent-[var(--primary)] cursor-pointer" />
+        </div>
+        <div class="rounded-lg border border-[var(--card-border)] p-2">
+          <canvas id="canvas-traj" class="w-full h-[135px] block"></canvas>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const DATA = {"song_info": {"split": "test", "index": 28, "song_id": "henan:884", "title": "天上黄河几道湾", "category": "灯歌", "header_tonic": "1=♭E", "start_bar": 0, "window_in_song": 0}, "orig_seq": [14, 1, 16, 14, 18, 1, 18, 1, 14, 16, 1, 14, 14, 1, 1, 1, 21, 21, 1, 18, 16, 18, 16, 14, 16, 13, 1, 1, 14, 1, 1, 1, 9, 14, 1, 14, 18, 1, 18, 1, 18, 1, 14, 1, 16, 1, 1, 1, 18, 16, 1, 14, 11, 14, 18, 1, 16, 1, 16, 14, 14, 1, 1, 1], "recon_cases": {"0": {"masked": [14, 1, 16, 14, 18, 1, 18, 1, 14, 16, 1, 14, 14, 1, 1, 1, 21, 21, 1, 18, 16, 18, 16, 14, 16, 13, 1, 1, 14, 1, 1, 1, 9, 14, 1, 14, 18, 1, 18, 1, 18, 1, 14, 1, 16, 1, 1, 1, 18, 16, 1, 14, 11, 14, 18, 1, 16, 1, 16, 14, 14, 1, 1, 1], "recon": [14, 1, 16, 14, 18, 1, 18, 1, 14, 16, 1, 14, 14, 1, 1, 1, 21, 21, 1, 18, 16, 18, 16, 14, 16, 13, 1, 1, 14, 1, 1, 1, 9, 14, 1, 14, 18, 1, 18, 1, 18, 1, 14, 1, 16, 1, 1, 1, 18, 16, 1, 14, 11, 14, 18, 1, 16, 1, 16, 14, 14, 1, 1, 1], "match_pct": 100.0, "penta_pct": 95.3}, "5": {"masked": [14, 1, 16, 39, 39, 1, 18, 39, 14, 39, 1, 14, 14, 1, 1, 1, 21, 21, 1, 18, 16, 18, 16, 14, 16, 13, 1, 1, 14, 39, 1, 1, 9, 14, 1, 14, 18, 1, 18, 1, 18, 1, 39, 1, 16, 1, 1, 1, 18, 16, 1, 14, 11, 14, 39, 1, 16, 1, 16, 14, 14, 1, 1, 1], "recon": [14, 1, 16, 16, 14, 1, 18, 1, 14, 1, 1, 14, 14, 1, 1, 1, 21, 21, 1, 18, 16, 18, 16, 14, 16, 13, 1, 1, 14, 1, 1, 1, 9, 14, 1, 14, 18, 1, 18, 1, 18, 1, 1, 1, 16, 1, 1, 1, 18, 16, 1, 14, 11, 14, 18, 1, 16, 1, 16, 14, 14, 1, 1, 1], "match_pct": 93.8, "penta_pct": 95.3}, "15": {"masked": [39, 39, 39, 14, 39, 39, 18, 1, 14, 16, 1, 14, 14, 1, 1, 39, 21, 39, 1, 18, 16, 18, 16, 39, 39, 39, 1, 39, 14, 1, 1, 1, 39, 14, 1, 14, 18, 1, 39, 1, 39, 1, 39, 1, 16, 1, 1, 1, 18, 16, 1, 14, 11, 39, 18, 1, 16, 1, 16, 39, 14, 1, 39, 1], "recon": [18, 1, 1, 14, 18, 1, 18, 1, 14, 16, 1, 14, 14, 1, 1, 1, 21, 1, 1, 18, 16, 18, 16, 1, 14, 1, 1, 1, 14, 1, 1, 1, 16, 14, 1, 14, 18, 1, 13, 1, 16, 1, 1, 1, 16, 1, 1, 1, 18, 16, 1, 14, 11, 1, 18, 1, 16, 1, 16, 1, 14, 1, 1, 1], "match_pct": 81.2, "penta_pct": 96.9}, "25": {"masked": [14, 39, 16, 14, 39, 39, 18, 1, 14, 16, 39, 14, 39, 1, 39, 1, 39, 39, 39, 39, 16, 39, 16, 14, 39, 39, 1, 1, 39, 1, 39, 39, 9, 14, 39, 14, 18, 1, 39, 1, 39, 1, 39, 39, 16, 39, 39, 1, 39, 16, 39, 14, 39, 14, 18, 1, 39, 39, 39, 39, 14, 39, 39, 1], "recon": [14, 1, 16, 14, 11, 1, 18, 1, 14, 16, 1, 14, 9, 1, 0, 1, 16, 1, 1, 11, 16, 1, 16, 14, 18, 18, 1, 1, 11, 1, 18, 1, 9, 14, 18, 14, 18, 1, 18, 1, 18, 1, 1, 1, 16, 1, 14, 1, 16, 16, 16, 14, 18, 14, 18, 1, 11, 1, 1, 14, 14, 1, 11, 1], "match_pct": 68.8, "penta_pct": 100.0}, "35": {"masked": [39, 39, 16, 14, 18, 1, 18, 39, 14, 16, 39, 39, 39, 1, 39, 39, 39, 39, 39, 39, 39, 18, 39, 39, 16, 13, 39, 39, 39, 39, 39, 39, 39, 39, 39, 14, 39, 39, 18, 39, 18, 1, 14, 1, 39, 39, 39, 39, 39, 39, 39, 39, 11, 14, 39, 39, 16, 39, 39, 39, 39, 1, 39, 39], "recon": [18, 1, 16, 14, 18, 1, 18, 1, 14, 16, 18, 16, 11, 1, 1, 1, 14, 16, 16, 16, 16, 18, 18, 1, 16, 13, 16, 16, 1, 1, 1, 18, 16, 1, 14, 14, 16, 1, 18, 14, 18, 1, 14, 1, 9, 1, 1, 1, 14, 1, 14, 16, 11, 14, 1, 1, 16, 1, 18, 1, 18, 1, 1, 16], "match_pct": 54.7, "penta_pct": 98.4}, "45": {"masked": [39, 39, 39, 14, 39, 39, 39, 39, 39, 16, 1, 39, 14, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 1, 14, 39, 39, 39, 39, 14, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39], "recon": [14, 16, 14, 14, 21, 1, 16, 11, 21, 16, 1, 11, 14, 1, 1, 1, 23, 21, 18, 1, 23, 1, 18, 1, 14, 18, 18, 1, 14, 1, 1, 1, 18, 14, 11, 1, 21, 1, 21, 14, 16, 1, 14, 1, 16, 1, 1, 1, 21, 1, 18, 1, 21, 1, 1, 1, 14, 1, 23, 11, 14, 1, 1, 1], "match_pct": 46.9, "penta_pct": 100.0}, "50": {"masked": [39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39], "recon": [28, 1, 26, 26, 28, 1, 21, 1, 26, 1, 28, 1, 26, 1, 23, 1, 26, 1, 26, 21, 0, 1, 1, 1, 21, 1, 16, 1, 18, 1, 1, 1, 26, 1, 26, 1, 28, 1, 23, 1, 18, 1, 26, 1, 30, 1, 1, 1, 28, 1, 21, 1, 26, 1, 23, 1, 21, 1, 21, 1, 1, 1, 1, 28], "match_pct": 32.8, "penta_pct": 100.0}}, "traj_snaps": {"50": [39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39], "40": [39, 39, 18, 39, 39, 1, 39, 39, 39, 39, 1, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 14, 39, 1, 39, 39, 39, 39, 39, 1, 39, 39, 39, 39, 39, 39, 39, 1, 39, 39, 39, 39, 39, 14, 1, 18, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 1, 39, 39], "30": [39, 39, 18, 39, 39, 1, 39, 39, 39, 39, 1, 39, 9, 39, 39, 39, 16, 39, 39, 1, 1, 1, 39, 39, 16, 39, 14, 39, 1, 39, 39, 39, 21, 39, 1, 39, 39, 39, 39, 1, 18, 39, 1, 1, 16, 39, 1, 39, 14, 1, 18, 1, 21, 39, 39, 39, 39, 39, 18, 39, 39, 1, 39, 1], "20": [39, 39, 18, 14, 1, 1, 39, 39, 18, 1, 1, 1, 9, 39, 39, 1, 16, 1, 39, 1, 1, 1, 39, 39, 16, 39, 14, 39, 1, 39, 39, 39, 21, 39, 1, 39, 39, 1, 11, 1, 18, 1, 1, 1, 16, 39, 1, 39, 14, 1, 18, 1, 21, 39, 18, 39, 39, 39, 18, 1, 39, 1, 39, 1], "10": [39, 39, 18, 14, 1, 1, 39, 1, 18, 1, 1, 1, 9, 1, 39, 1, 16, 1, 18, 1, 1, 1, 39, 1, 16, 1, 14, 39, 1, 39, 1, 39, 21, 1, 1, 39, 16, 1, 11, 1, 18, 1, 1, 1, 16, 1, 1, 1, 14, 1, 18, 1, 21, 39, 18, 1, 39, 39, 18, 1, 16, 1, 39, 1], "5": [18, 1, 18, 14, 1, 1, 1, 1, 18, 1, 1, 1, 9, 1, 1, 1, 16, 1, 18, 1, 1, 1, 21, 1, 16, 1, 14, 39, 1, 1, 1, 39, 21, 1, 1, 39, 16, 1, 11, 1, 18, 1, 1, 1, 16, 1, 1, 1, 14, 1, 18, 1, 21, 1, 18, 1, 16, 39, 18, 1, 16, 1, 39, 1], "1": [18, 1, 18, 14, 1, 1, 1, 1, 18, 1, 1, 1, 9, 1, 1, 1, 16, 1, 18, 1, 1, 1, 21, 1, 16, 1, 14, 1, 1, 1, 1, 1, 21, 1, 1, 39, 16, 1, 11, 1, 18, 1, 1, 1, 16, 1, 1, 1, 14, 1, 18, 1, 21, 1, 18, 1, 16, 1, 18, 1, 16, 1, 1, 1], "0": [18, 1, 18, 14, 1, 1, 1, 1, 18, 1, 1, 1, 9, 1, 1, 1, 16, 1, 18, 1, 1, 1, 21, 1, 16, 1, 14, 1, 1, 1, 1, 1, 21, 1, 1, 1, 16, 1, 11, 1, 18, 1, 1, 1, 16, 1, 1, 1, 14, 1, 18, 1, 21, 1, 18, 1, 16, 1, 18, 1, 16, 1, 1, 1]}, "stage3_probe": {"masked_pos": 1, "true_tok": 1, "top_tokens": [1, 14, 16, 18, 21, 11], "top_probs": [63.6, 16.1, 7.9, 3.6, 2.5, 2.3]}, "train_loss_curve": [2.139, 1.8495, 1.726, 1.6623, 1.568, 1.4902, 1.4387, 1.4087, 1.4056, 1.3956, 1.3974, 1.3861, 1.376, 1.3796, 1.3661, 1.3588, 1.3566, 1.349, 1.3443, 1.3613, 1.34, 1.3507, 1.3492, 1.3397, 1.3376, 1.3433, 1.3377, 1.3271, 1.3384, 1.335, 1.3475, 1.3281, 1.3194, 1.3335, 1.3194, 1.3356, 1.327, 1.3329, 1.3189, 1.3102, 1.3206, 1.3282, 1.32, 1.313, 1.3035, 1.3184, 1.3058, 1.3091, 1.3031, 1.3207, 1.3124, 1.2988, 1.3162, 1.3023, 1.3037, 1.308, 1.3114, 1.2977, 1.3002, 1.3073, 1.2897, 1.2922, 1.3032, 1.292, 1.2953, 1.3114, 1.2985, 1.2974, 1.291, 1.2951, 1.3034, 1.2905, 1.2937, 1.2978, 1.2869, 1.2969, 1.2979, 1.3043, 1.302, 1.3046, 1.2965, 1.2953, 1.2889, 1.289, 1.3005, 1.3021, 1.2995, 1.3062, 1.307, 1.2852, 1.289, 1.2952, 1.2948, 1.2789, 1.2938, 1.3, 1.302, 1.2858, 1.2927, 1.2989], "val_loss_curve": [1.8223, 1.6829, 1.5839, 1.5794, 1.4552, 1.3801, 1.3506, 1.3349, 1.3082, 1.295, 1.3108, 1.2963, 1.2941, 1.2838, 1.2879, 1.2756, 1.3011, 1.2718, 1.2791, 1.2756, 1.2788, 1.2739, 1.2698, 1.2605, 1.2677, 1.2639, 1.2615, 1.2677, 1.2653, 1.2672, 1.2644, 1.2644, 1.2557, 1.2556, 1.2615, 1.2649, 1.2582, 1.2557, 1.2555, 1.2528, 1.2592, 1.2503, 1.2569, 1.2505, 1.2573, 1.2565, 1.2577, 1.2603, 1.2559, 1.2621, 1.2615, 1.2523, 1.252, 1.2516, 1.2464, 1.2446, 1.2471, 1.2567, 1.2478, 1.2511, 1.2523, 1.2485, 1.2446, 1.2504, 1.2583, 1.2522, 1.2493, 1.2478, 1.2462, 1.2485, 1.2463, 1.2469, 1.2465, 1.2474, 1.2452, 1.2505, 1.2484, 1.251, 1.2451, 1.2449, 1.2471, 1.2467, 1.2473, 1.2472, 1.2456, 1.2438, 1.2468, 1.2467, 1.2471, 1.2426, 1.2445, 1.2447, 1.2456, 1.245, 1.2435, 1.245, 1.2468, 1.2448, 1.2454, 1.2449], "checkups": [{"epoch": 10, "val_loss": 1.295, "orphan_hold_count": 5, "orphan_hold_ratio": 0.0062, "pentatonic_ratio": 0.9543, "onset_ratio": 0.3594, "hold_ratio": 0.6352, "rest_ratio": 0.0055, "avg_max_train_overlap": 13.75, "max_train_overlap": 17, "exact_copy_count": 0}, {"epoch": 20, "val_loss": 1.2756, "orphan_hold_count": 47, "orphan_hold_ratio": 0.0632, "pentatonic_ratio": 0.9684, "onset_ratio": 0.3695, "hold_ratio": 0.5813, "rest_ratio": 0.0492, "avg_max_train_overlap": 12.8, "max_train_overlap": 19, "exact_copy_count": 0}, {"epoch": 30, "val_loss": 1.2672, "orphan_hold_count": 47, "orphan_hold_ratio": 0.067, "pentatonic_ratio": 0.9748, "onset_ratio": 0.3563, "hold_ratio": 0.5484, "rest_ratio": 0.0953, "avg_max_train_overlap": 11.8, "max_train_overlap": 15, "exact_copy_count": 0}, {"epoch": 40, "val_loss": 1.2528, "orphan_hold_count": 61, "orphan_hold_ratio": 0.0832, "pentatonic_ratio": 0.9864, "onset_ratio": 0.3352, "hold_ratio": 0.5727, "rest_ratio": 0.0922, "avg_max_train_overlap": 13.25, "max_train_overlap": 21, "exact_copy_count": 0}, {"epoch": 50, "val_loss": 1.2621, "orphan_hold_count": 116, "orphan_hold_ratio": 0.157, "pentatonic_ratio": 0.9659, "onset_ratio": 0.2703, "hold_ratio": 0.5773, "rest_ratio": 0.1523, "avg_max_train_overlap": 11.95, "max_train_overlap": 19, "exact_copy_count": 0}, {"epoch": 60, "val_loss": 1.2511, "orphan_hold_count": 55, "orphan_hold_ratio": 0.0828, "pentatonic_ratio": 0.9589, "onset_ratio": 0.3984, "hold_ratio": 0.5188, "rest_ratio": 0.0828, "avg_max_train_overlap": 11.35, "max_train_overlap": 16, "exact_copy_count": 0}, {"epoch": 70, "val_loss": 1.2485, "orphan_hold_count": 53, "orphan_hold_ratio": 0.0696, "pentatonic_ratio": 0.9965, "onset_ratio": 0.3398, "hold_ratio": 0.5945, "rest_ratio": 0.0656, "avg_max_train_overlap": 12.75, "max_train_overlap": 17, "exact_copy_count": 0}, {"epoch": 80, "val_loss": 1.2449, "orphan_hold_count": 94, "orphan_hold_ratio": 0.1351, "pentatonic_ratio": 0.9635, "onset_ratio": 0.3008, "hold_ratio": 0.5437, "rest_ratio": 0.1555, "avg_max_train_overlap": 12.4, "max_train_overlap": 21, "exact_copy_count": 0}, {"epoch": 90, "val_loss": 1.2426, "orphan_hold_count": 55, "orphan_hold_ratio": 0.077, "pentatonic_ratio": 0.9699, "onset_ratio": 0.3414, "hold_ratio": 0.5578, "rest_ratio": 0.1008, "avg_max_train_overlap": 12.05, "max_train_overlap": 18, "exact_copy_count": 0}, {"epoch": 100, "val_loss": 1.2449, "orphan_hold_count": 45, "orphan_hold_ratio": 0.0633, "pentatonic_ratio": 0.9553, "onset_ratio": 0.3719, "hold_ratio": 0.5555, "rest_ratio": 0.0727, "avg_max_train_overlap": 12.2, "max_train_overlap": 17, "exact_copy_count": 0}], "ep_samples": {"10": [21, 1, 1, 1, 14, 1, 14, 1, 21, 1, 1, 1, 1, 1, 1, 1, 18, 1, 1, 18, 21, 1, 1, 1, 14, 1, 1, 18, 18, 1, 23, 1, 18, 1, 1, 1, 18, 1, 14, 1, 23, 1, 14, 1, 13, 1, 23, 1, 14, 1, 18, 1, 9, 1, 1, 1, 21, 1, 18, 1, 1, 1, 16, 1], "50": [18, 16, 14, 1, 21, 1, 1, 21, 11, 16, 1, 1, 11, 1, 14, 1, 16, 1, 14, 16, 14, 1, 1, 1, 14, 1, 1, 18, 16, 1, 1, 14, 14, 1, 16, 16, 11, 18, 9, 1, 16, 1, 1, 14, 7, 1, 18, 1, 16, 1, 1, 16, 16, 1, 16, 18, 16, 1, 21, 1, 1, 1, 16, 16], "100": [9, 1, 1, 1, 1, 1, 0, 0, 11, 1, 1, 1, 14, 1, 0, 1, 9, 1, 1, 1, 1, 1, 0, 1, 9, 1, 1, 1, 1, 1, 1, 1, 11, 1, 1, 1, 1, 1, 11, 1, 9, 1, 1, 1, 1, 1, 0, 0, 16, 1, 1, 1, 0, 1, 11, 1, 0, 1, 1, 1, 1, 1, 11, 1]}};
+
+    const REST = 0, HOLD = 1, MASK = 39;
+    const PENTA_MOD12 = new Set([0, 2, 4, 7, 9]);
+    const JIANPU_BASE = ["1", "#1", "2", "b3", "3", "4", "#4", "5", "#5", "6", "b7", "7"];
+
+    function tokToJianpu(tok) {
+      if (tok === REST) return "0";
+      if (tok === HOLD) return "-";
+      if (tok === MASK) return "?";
+      const midi = tok + 46;
+      const oct = Math.floor(midi / 12) - 5;
+      let s = JIANPU_BASE[midi % 12];
+      if (oct > 0) s += "'".repeat(oct);
+      if (oct < 0) s += ",".repeat(-oct);
+      return s;
+    }
+
+    function seqToJianpuStr(seq) {
+      return seq.map((tok, i) => (i > 0 && i % 8 === 0 ? "| " : "") + tokToJianpu(tok)).join(" ");
+    }
+
+    function cssVar(name) {
+      return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    }
+
+    // Audio synthesizer
+    let audioCtx = null;
+    let playTimers = [];
+
+    function stopAudio() {
+      playTimers.forEach(clearTimeout);
+      playTimers = [];
+      document.getElementById("btn-stop-audio").classList.add("hidden");
+    }
+
+    function playSeq(seq, stepMs = 150) {
+      stopAudio();
+      try {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return;
+        if (!audioCtx) audioCtx = new AC();
+        if (audioCtx.state === "suspended") audioCtx.resume();
+      } catch (_) { return; }
+
+      document.getElementById("btn-stop-audio").classList.remove("hidden");
+      const now0 = audioCtx.currentTime + 0.04;
+      let i = 0;
+      while (i < seq.length) {
+        const tok = seq[i];
+        if (tok >= 2 && tok < MASK) {
+          let holdLen = 1;
+          while (i + holdLen < seq.length && seq[i + holdLen] === HOLD) holdLen++;
+          const midi = tok + 46;
+          const freq = 440 * Math.pow(2, (midi - 69) / 12);
+          const tStart = now0 + (i * stepMs) / 1000;
+          const dur = (holdLen * stepMs) / 1000 * 0.92;
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = "triangle";
+          osc.frequency.setValueAtTime(freq, tStart);
+          gain.gain.setValueAtTime(0.001, tStart);
+          gain.gain.exponentialRampToValueAtTime(0.16, tStart + 0.015);
+          gain.gain.exponentialRampToValueAtTime(0.001, tStart + dur);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(tStart);
+          osc.stop(tStart + dur + 0.02);
+          i += holdLen;
+        } else if (tok === MASK) {
+          const tStart = now0 + (i * stepMs) / 1000;
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(160, tStart);
+          gain.gain.setValueAtTime(0.02, tStart);
+          gain.gain.exponentialRampToValueAtTime(0.0005, tStart + 0.03);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(tStart);
+          osc.stop(tStart + 0.035);
+          i++;
+        } else {
+          i++;
+        }
+      }
+      playTimers.push(setTimeout(stopAudio, seq.length * stepMs + 250));
+    }
+
+    // Generic Piano Roll renderer for 64-step sequence
+    function drawPianoRoll(canvasId, seq, opts = {}) {
+      const canvas = document.getElementById(canvasId);
+      if (!canvas) return;
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      canvas.width = Math.round(rect.width * dpr);
+      canvas.height = Math.round(rect.height * dpr);
+      const ctx = canvas.getContext("2d");
+      ctx.scale(dpr, dpr);
+
+      const W = rect.width, H = rect.height;
+      const leftPad = 34;
+      const colW = (W - leftPad) / 64;
+      const minT = 6, maxT = 32; // MIDI 52..78 covers Henan melodies cleanly
+      const rows = maxT - minT + 1;
+      const topPad = 6, botPad = 6;
+      const rowH = (H - topPad - botPad) / rows;
+
+      const cBorder = cssVar("--card-border") || "rgba(128,128,128,0.25)";
+      const cStrong = cssVar("--border") || "rgba(128,128,128,0.5)";
+      const cMuted = cssVar("--muted-foreground") || "#9ca3af";
+      const c1 = cssVar("--chart-1") || "#3b82f6";
+      const c2 = cssVar("--chart-2") || "#10b981";
+      const cWarn = cssVar("--warning") || "#f59e0b";
+      const cErr = cssVar("--error") || "#ef4444";
+
+      ctx.clearRect(0, 0, W, H);
+      for (let i = 0; i <= 64; i++) {
+        const x = leftPad + i * colW;
+        ctx.beginPath();
+        ctx.strokeStyle = i % 8 === 0 ? cStrong : cBorder;
+        ctx.lineWidth = i % 8 === 0 ? 1.2 : 0.4;
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, H);
+        ctx.stroke();
+      }
+      ctx.fillStyle = cMuted;
+      ctx.font = "10px monospace";
+      ctx.textAlign = "right";
+      ctx.textBaseline = "middle";
+      [[14, "1"], [21, "5"], [26, "1'"]].forEach(([tk, lbl]) => {
+        const y = topPad + (maxT - tk) * rowH + rowH / 2;
+        ctx.fillText(lbl, leftPad - 5, y);
+      });
+
+      let activeTok = null;
+      seq.forEach((tok, i) => {
+        const x = leftPad + i * colW;
+        if (opts.highlightIdx === i) {
+          ctx.fillStyle = c1;
+          ctx.globalAlpha = 0.2;
+          ctx.fillRect(x, 0, colW, H);
+          ctx.globalAlpha = 1;
+        }
+        if (tok === MASK) {
+          activeTok = null;
+          ctx.fillStyle = cErr;
+          ctx.globalAlpha = 0.22;
+          ctx.fillRect(x + 0.5, topPad, Math.max(1.5, colW - 1), H - topPad - botPad);
+          ctx.globalAlpha = 1;
+        } else if (tok === REST) {
+          activeTok = null;
+          ctx.fillStyle = cMuted;
+          ctx.globalAlpha = 0.35;
+          ctx.fillRect(x + 0.5, H - botPad - 4, Math.max(1.5, colW - 1), 3);
+          ctx.globalAlpha = 1;
+        } else if (tok === HOLD) {
+          if (activeTok !== null) {
+            const clamped = Math.max(minT, Math.min(maxT, activeTok));
+            const y = topPad + (maxT - clamped) * rowH;
+            ctx.fillStyle = c2;
+            ctx.globalAlpha = 0.8;
+            ctx.fillRect(x, y + 0.5, Math.max(1.5, colW - 0.5), Math.max(3, rowH - 1));
+            ctx.globalAlpha = 1;
+          } else {
+            ctx.fillStyle = cErr;
+            ctx.fillRect(x + 0.5, H / 2 - 2, Math.max(1.5, colW - 1), 4);
+          }
+        } else {
+          activeTok = tok;
+          const clamped = Math.max(minT, Math.min(maxT, tok));
+          const y = topPad + (maxT - clamped) * rowH;
+          const isPenta = PENTA_MOD12.has((tok + 46) % 12);
+          ctx.fillStyle = isPenta ? c1 : cWarn;
+          ctx.fillRect(x + 0.5, y + 0.5, Math.max(1.5, colW - 1), Math.max(3, rowH - 1));
+        }
+      });
+    }
+
+    // Tab switching
+    let currentTab = "overview";
+    function switchTab(name) {
+      currentTab = name;
+      stopAudio();
+      document.querySelectorAll(".tab-panel").forEach(p => p.classList.add("hidden"));
+      document.getElementById("tab-" + name).classList.remove("hidden");
+      document.querySelectorAll(".tab-btn").forEach(b => {
+        if (b.dataset.tab === name) {
+          b.style.background = "var(--primary)";
+          b.style.color = "var(--primary-foreground)";
+        } else {
+          b.style.background = "transparent";
+          b.style.color = "var(--muted-foreground)";
+        }
+      });
+      requestAnimationFrame(redrawActiveTab);
+    }
+
+    document.querySelectorAll(".tab-btn").forEach(btn => {
+      btn.onclick = () => switchTab(btn.dataset.tab);
+    });
+
+    // TAB 1: Stage 1 Grid & Inspector
+    let s1Selected = 0;
+    function renderStage1() {
+      const grid = document.getElementById("s1-grid");
+      grid.innerHTML = "";
+      DATA.orig_seq.forEach((tok, i) => {
+        const cell = document.createElement("button");
+        const barIdx = Math.floor(i / 8) + 1;
+        const isSelected = i === s1Selected;
+        cell.className = "p-1 rounded border text-[11px] font-mono transition-colors";
+        cell.style.borderColor = isSelected ? "var(--primary)" : "var(--card-border)";
+        cell.style.background = isSelected ? "color-mix(in srgb, var(--primary) 18%, transparent)" : "transparent";
+        const j = tokToJianpu(tok);
+        cell.innerHTML = `<div class="font-bold">${j}</div><div class="text-[10px] text-[var(--muted-foreground)]">${tok}</div>`;
+        cell.title = `第${barIdx}小节 第${(i%8)+1}步`;
+        cell.onclick = () => { s1Selected = i; renderStage1(); };
+        grid.appendChild(cell);
+      });
+      const tok = DATA.orig_seq[s1Selected];
+      const bar = Math.floor(s1Selected / 8) + 1;
+      const beatStep = s1Selected % 8;
+      let kindDesc = tok === REST ? "休止符 REST (不出声)" : tok === HOLD ? "延长符 HOLD (延续上一格音高)" : `新音符起音 PITCH (MIDI ${tok + 46})`;
+      document.getElementById("s1-inspector").innerHTML = `
+        <span><strong>位置 pos:</strong> ${s1Selected} (第 ${bar} 小节 · 小节内第 ${beatStep} 格 <code>pos%8=${beatStep}</code>)</span>
+        <span><strong>整数编码:</strong> <code>${tok}</code></span>
+        <span><strong>简谱:</strong> ${tokToJianpu(tok)}</span>
+        <span><strong>含义:</strong> ${kindDesc}</span>
+      `;
+      drawPianoRoll("canvas-s1", DATA.orig_seq, { highlightIdx: s1Selected });
+    }
+    document.getElementById("btn-play-s1").onclick = () => playSeq(DATA.orig_seq);
+
+    // TAB 2: Stage 2 Masking
+    let s2Seed = 1234;
+    let s2T = 25;
+    let s2Seq = [];
+    function mulberry32(a) {
+      return function() {
+        let t = a += 0x6D2B79F5;
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+    function renderStage2() {
+      const rng = mulberry32(s2Seed + s2T * 97);
+      const gamma = s2T / 50.0;
+      const alpha = 1.0 - gamma;
+      let maskCount = 0;
+      s2Seq = DATA.orig_seq.map(tok => {
+        if (s2T > 0 && rng() < gamma) { maskCount++; return MASK; }
+        return tok;
+      });
+      if (s2T > 0 && maskCount === 0) { s2Seq[0] = MASK; maskCount = 1; }
+
+      document.getElementById("s2-t-label").textContent = `步数 t = ${s2T} / 50`;
+      document.getElementById("s2-gamma").textContent = `${Math.round(gamma * 100)}%`;
+      document.getElementById("s2-alpha").textContent = `${Math.round(alpha * 100)}%`;
+      document.getElementById("s2-punmask").textContent = s2T === 0 ? "-" : `${(100 / s2T).toFixed(1)}%`;
+      document.getElementById("s2-actual").textContent = `${maskCount}/64 (${Math.round(maskCount / 64 * 100)}%)`;
+      document.getElementById("s2-seq-text").textContent = "简谱视角: " + seqToJianpuStr(s2Seq);
+      drawPianoRoll("canvas-s2", s2Seq);
+    }
+    document.getElementById("s2-slider").oninput = (e) => { s2T = Number(e.target.value); renderStage2(); };
+    document.getElementById("btn-s2-reroll").onclick = () => { s2Seed = (s2Seed * 1664525 + 1013904223) >>> 0; renderStage2(); };
+    document.getElementById("btn-play-s2").onclick = () => playSeq(s2Seq);
+
+    // TAB 3: Stage 3 Probe Bars
+    function renderStage3() {
+      const box = document.getElementById("s3-bars");
+      box.innerHTML = "";
+      const { top_tokens, top_probs, true_tok } = DATA.stage3_probe;
+      top_tokens.forEach((tok, idx) => {
+        const prob = top_probs[idx];
+        const isTrue = tok === true_tok;
+        const label = tok === HOLD ? "1 (HOLD 延长)" : tok === REST ? "0 (REST 休止)" : `${tok} (${tokToJianpu(tok)} / MIDI ${tok + 46})`;
+        const row = document.createElement("div");
+        row.className = "grid grid-cols-[150px_1fr_54px] items-center gap-3 text-xs";
+        row.innerHTML = `
+          <div class="font-mono ${isTrue ? 'font-bold text-[var(--primary)]' : ''}">${label}${isTrue ? ' ★真值' : ''}</div>
+          <div class="h-4 rounded bg-[var(--secondary)] overflow-hidden">
+            <div class="h-full rounded transition-all" style="width:${prob}%;background:${isTrue ? 'var(--primary)' : 'var(--chart-2)'}"></div>
+          </div>
+          <div class="font-mono text-right">${prob.toFixed(1)}%</div>
+        `;
+        box.appendChild(row);
+      });
+    }
+
+    // TAB 4: Loss Charts, Reconstruction & Trajectory
+    function drawLineChart(canvasId, seriesList, yLabel, title, xVals, yMin, yMax) {
+      const canvas = document.getElementById(canvasId);
+      if (!canvas) return;
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      canvas.width = Math.round(rect.width * dpr);
+      canvas.height = Math.round(rect.height * dpr);
+      const ctx = canvas.getContext("2d");
+      ctx.scale(dpr, dpr);
+
+      const W = rect.width, H = rect.height;
+      const pad = { l: 42, r: 14, t: 24, b: 24 };
+      const cw = W - pad.l - pad.r, ch = H - pad.t - pad.b;
+
+      const cBorder = cssVar("--card-border") || "rgba(128,128,128,0.25)";
+      const cFg = cssVar("--foreground") || "#e5e7eb";
+      const cMuted = cssVar("--muted-foreground") || "#9ca3af";
+
+      ctx.clearRect(0, 0, W, H);
+      ctx.fillStyle = cFg;
+      ctx.font = "bold 11px sans-serif";
+      ctx.textAlign = "left";
+      ctx.fillText(title, pad.l, 12);
+
+      // Grid
+      ctx.strokeStyle = cBorder;
+      ctx.lineWidth = 0.8;
+      ctx.font = "10px monospace";
+      ctx.fillStyle = cMuted;
+      ctx.textAlign = "right";
+      ctx.textBaseline = "middle";
+      for (let k = 0; k <= 4; k++) {
+        const y = pad.t + (ch * k) / 4;
+        const val = yMax - ((yMax - yMin) * k) / 4;
+        ctx.beginPath();
+        ctx.moveTo(pad.l, y);
+        ctx.lineTo(W - pad.r, y);
+        ctx.stroke();
+        ctx.fillText(val.toFixed(yMax > 10 ? 0 : 2), pad.l - 6, y);
+      }
+
+      // Curves
+      seriesList.forEach(s => {
+        ctx.strokeStyle = cssVar(s.colorVar) || s.fallback;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        s.values.forEach((v, idx) => {
+          const x = pad.l + (cw * (xVals[idx] - xVals[0])) / Math.max(1, xVals[xVals.length - 1] - xVals[0]);
+          const y = pad.t + ch - ((v - yMin) / (yMax - yMin)) * ch;
+          if (idx === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+      });
+
+      // Legend top-right
+      let lx = W - pad.r;
+      ctx.textAlign = "right";
+      ctx.font = "10px sans-serif";
+      seriesList.slice().reverse().forEach(s => {
+        ctx.fillStyle = cssVar(s.colorVar) || s.fallback;
+        ctx.fillText("● " + s.label, lx, 12);
+        lx -= ctx.measureText("● " + s.label).width + 12;
+      });
+    }
+
+    let currentRt = "25";
+    function drawReconComparison() {
+      const c = DATA.recon_cases[currentRt];
+      const pct = Math.round((Number(currentRt) / 50) * 100);
+      document.getElementById("s4-rt-label").textContent = `${pct}% (t=${currentRt})`;
+      document.getElementById("s4-match").textContent = `${c.match_pct}%`;
+      document.getElementById("s4-penta").textContent = `${c.penta_pct}%`;
+
+      document.querySelectorAll(".rt-btn").forEach(b => {
+        if (b.dataset.rt === currentRt) {
+          b.style.background = "var(--primary)";
+          b.style.color = "var(--primary-foreground)";
+        } else {
+          b.style.background = "transparent";
+          b.style.color = "var(--foreground)";
+        }
+      });
+
+      // Draw 3 stacked bands on canvas-s4-recon
+      const canvas = document.getElementById("canvas-s4-recon");
+      if (canvas) {
+        const dpr = window.devicePixelRatio || 1;
+        const rect = canvas.getBoundingClientRect();
+        if (rect.width && rect.height) {
+          canvas.width = Math.round(rect.width * dpr);
+          canvas.height = Math.round(rect.height * dpr);
+          const ctx = canvas.getContext("2d");
+          ctx.scale(dpr, dpr);
+          const W = rect.width, H = rect.height;
+          const leftPad = 56, colW = (W - leftPad) / 64;
+          const bandH = H / 3;
+          const minT = 8, maxT = 26, rows = maxT - minT + 1;
+          const rowH = (bandH - 10) / rows;
+          const cBorder = cssVar("--card-border") || "rgba(128,128,128,0.25)";
+          const cStrong = cssVar("--border") || "rgba(128,128,128,0.5)";
+          const cMuted = cssVar("--muted-foreground") || "#9ca3af";
+          const c1 = cssVar("--chart-1") || "#3b82f6";
+          const c2 = cssVar("--chart-2") || "#10b981";
+          const cErr = cssVar("--error") || "#ef4444";
+
+          ctx.clearRect(0, 0, W, H);
+          const tracks = [
+            { label: "原曲", seq: DATA.orig_seq, y0: 0 },
+            { label: "掩码态", seq: c.masked, y0: bandH },
+            { label: "重建后", seq: c.recon, y0: bandH * 2 },
+          ];
+          tracks.forEach((tr, bIdx) => {
+            if (bIdx > 0) {
+              ctx.strokeStyle = cStrong;
+              ctx.lineWidth = 1;
+              ctx.beginPath();
+              ctx.moveTo(0, tr.y0);
+              ctx.lineTo(W, tr.y0);
+              ctx.stroke();
+            }
+            ctx.fillStyle = cMuted;
+            ctx.font = "bold 11px sans-serif";
+            ctx.textAlign = "right";
+            ctx.textBaseline = "middle";
+            ctx.fillText(tr.label, leftPad - 8, tr.y0 + bandH / 2);
+
+            let active = null;
+            tr.seq.forEach((tok, i) => {
+              const x = leftPad + i * colW;
+              if (tok === MASK) {
+                active = null;
+                ctx.fillStyle = cErr;
+                ctx.globalAlpha = 0.25;
+                ctx.fillRect(x + 0.5, tr.y0 + 4, Math.max(1.5, colW - 1), bandH - 8);
+                ctx.globalAlpha = 1;
+              } else if (tok === REST) {
+                active = null;
+              } else if (tok === HOLD) {
+                if (active !== null) {
+                  const cl = Math.max(minT, Math.min(maxT, active));
+                  const y = tr.y0 + 5 + (maxT - cl) * rowH;
+                  ctx.fillStyle = c2;
+                  ctx.fillRect(x, y, Math.max(1.5, colW - 0.5), Math.max(2.5, rowH));
+                }
+              } else {
+                active = tok;
+                const cl = Math.max(minT, Math.min(maxT, tok));
+                const y = tr.y0 + 5 + (maxT - cl) * rowH;
+                ctx.fillStyle = c1;
+                ctx.fillRect(x + 0.5, y, Math.max(1.5, colW - 1), Math.max(2.5, rowH));
+              }
+            });
+          });
+          for (let i = 0; i <= 64; i += 8) {
+            const x = leftPad + i * colW;
+            ctx.strokeStyle = cBorder;
+            ctx.beginPath();
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, H);
+            ctx.stroke();
+          }
+        }
+      }
+
+      document.getElementById("s4-jianpu-box").innerHTML = `
+        <div><strong>[原曲]</strong>   ${seqToJianpuStr(DATA.orig_seq)}</div>
+        <div><strong>[掩码后]</strong> ${seqToJianpuStr(c.masked)}</div>
+        <div><strong>[重建后]</strong> ${seqToJianpuStr(c.recon)}</div>
+      `;
+    }
+
+    const TRAJ_KEYS = ["50", "40", "30", "20", "10", "5", "1", "0"];
+    function renderTraj() {
+      const idx = Number(document.getElementById("traj-slider").value);
+      const tKey = TRAJ_KEYS[idx];
+      const seq = DATA.traj_snaps[tKey];
+      const remain = seq.filter(x => x === MASK).length;
+      document.getElementById("traj-label").textContent = `t = ${tKey} (遮挡 ${remain}/64)`;
+      drawPianoRoll("canvas-traj", seq);
+    }
+
+    document.querySelectorAll(".rt-btn").forEach(b => {
+      b.onclick = () => { currentRt = b.dataset.rt; drawReconComparison(); };
+    });
+    document.getElementById("btn-play-orig").onclick = () => playSeq(DATA.orig_seq);
+    document.getElementById("btn-play-mask").onclick = () => playSeq(DATA.recon_cases[currentRt].masked);
+    document.getElementById("btn-play-reco").onclick = () => playSeq(DATA.recon_cases[currentRt].recon);
+    document.getElementById("traj-slider").oninput = renderTraj;
+    document.getElementById("btn-play-traj").onclick = () => {
+      const tKey = TRAJ_KEYS[Number(document.getElementById("traj-slider").value)];
+      playSeq(DATA.traj_snaps[tKey]);
+    };
+    document.querySelectorAll(".btn-ep-play").forEach(b => {
+      b.onclick = () => playSeq(DATA.ep_samples[b.dataset.ep]);
+    });
+    document.getElementById("btn-stop-audio").onclick = stopAudio;
+
+    function redrawActiveTab() {
+      if (currentTab === "stage1") renderStage1();
+      if (currentTab === "stage2") renderStage2();
+      if (currentTab === "stage3") renderStage3();
+      if (currentTab === "stage4") {
+        const epX = Array.from({ length: 100 }, (_, i) => i + 1);
+        drawLineChart("canvas-loss", [
+          { label: "Train Loss", values: DATA.train_loss_curve, colorVar: "--chart-1", fallback: "#3b82f6" },
+          { label: "Val Loss", values: DATA.val_loss_curve, colorVar: "--chart-2", fallback: "#10b981" },
+        ], "CE", "100 Epoch 损失收敛曲线", epX, 1.2, 2.2);
+
+        const ckX = DATA.checkups.map(c => c.epoch);
+        drawLineChart("canvas-checkup", [
+          { label: "五声纯度 (%)", values: DATA.checkups.map(c => c.pentatonic_ratio * 100), colorVar: "--chart-1", fallback: "#3b82f6" },
+          { label: "孤立 HOLD (%)", values: DATA.checkups.map(c => c.orphan_hold_ratio * 100), colorVar: "--warning", fallback: "#f59e0b" },
+        ], "%", "生成样片体检指标", ckX, 0, 105);
+
+        drawReconComparison();
+        renderTraj();
+      }
+    }
+
+    window.addEventListener("resize", redrawActiveTab);
+    window.addEventListener("themechange", redrawActiveTab);
+    switchTab("overview");
+  </script>
+</body>
+</html>
