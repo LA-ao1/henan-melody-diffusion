@@ -1,4 +1,4 @@
-# 河南民歌旋律基因编码与掩码扩散项目（Stage 1 ~ Stage 3）
+# 河南民歌旋律基因编码与掩码扩散项目（Stage 1 ~ Stage 4）
 
 小组期中研究课题：**3 旋律的扰动与重建**  
 技术路线：**河南民歌 `2/4` 子集 + 十六分音符时间网格（每小节 8 步，`L = 64`） + 掩码扩散模型（Masked Diffusion）**
@@ -20,45 +20,46 @@
   - `prepare_henan.py`：阶段一数据过滤、按原曲 ID 防泄漏划分、切片编码与 100% 无损往返校验脚本
   - `diffusion.py`：阶段二掩码扩散核心模块（`HenanMelodyDataset`、`MaskedDiffusion` 前向加噪 $\gamma_t = t/T$、掩码交叉熵损失、精确马尔可夫后验 `1/t` 反向采样）
   - `preview_stage2.py`：阶段二单元测试与前向渐进掩码预览导出脚本
-  - `model.py`：阶段三双向 Transformer 去噪网络（`MelodyTransformerDenoiser`，融合词元、全局位置、`pos % 8` 小节拍点、正弦时间步四路嵌入）
-  - `check_stage3.py`：阶段三双向注意力、梯度流、采样闭环与训练耗时基准验证脚本
-- `data/processed/`：已预处理好的标准数据集，可直接用于阶段四训练
+  - `model.py`：阶段三双向 Transformer 去噪网络（`MelodyTransformerDenoiser`）
+  - `check_stage3.py`：阶段三双向注意力、梯度流、采样闭环与耗时基准验证脚本
+  - `train.py`：阶段四正式训练脚本（自动适配 CUDA/MPS/CPU、固定种子验证集、每 10 Epoch 四维体检、断点续训、Loss 与曲线绘图）
+- `data/processed/`：已预处理好的标准数据集，可直接开训
   - `train.npy`：`(2390, 64)`，来自 409 首曲目（步长 2 小节）
   - `val.npy`：`(99, 64)`，来自 51 首曲目（步长 8 小节，不重叠）
   - `test.npy`：`(116, 64)`，来自 51 首曲目（步长 8 小节，不重叠）
-  - `splits_metadata.json`：每条窗口所属原曲 ID、曲名、类别及起始小节索引
-  - `dataset_stats.json`：全库统计指标与校验报告
-- `data/samples_stage1/`：阶段一测试集抽样 5 份无损往返验证样片（含 `.mid`、`.musicxml`、`.wav` 及 `.txt`）
-- `data/samples_stage2/`：阶段二前向渐进掩码预览样片（`t = 0, 5, 15, 25, 35, 45, 50` 对应 `.mid`、`.wav`、`.txt` 及 `stage2_verification.json`）
+- `data/samples_stage1/`：阶段一测试集抽样 5 份无损往返验证样片
+- `data/samples_stage2/`：阶段二前向渐进掩码预览样片
 
 ---
 
-## 整数编码词表（`V = 40`, `L = 64`）
+## 快速在 Google Colab GPU 或本地开训（阶段四）
 
-| Token ID | 含义 | 说明 |
-| :--- | :--- | :--- |
-| `0` | `REST` | 休止符（无声） |
-| `1` | `HOLD` | 延长符号（延续上一时间步音高） |
-| `2 ~ 38` | `PITCH` | `MIDI 48 (C3) ~ 84 (C6)`（`token = midi - 46`，覆盖 99.96% 河南 `2/4` 音符） |
-| `39` | `[MASK]` | 掩码扩散专用吸收态掩码符号 |
+### 方式 A：Google Colab 免费 GPU（约 1 分钟跑完 100 Epoch）
+在 Colab 新建笔记本，切换运行时为 **T4 GPU**，依次运行以下单元：
 
----
+```bash
+!git clone https://github.com/LA-ao1/henan-melody-diffusion.git
+%cd henan-melody-diffusion
+!pip install -q mido
+!python3 -m melody_diffusion.train --epochs 120 --batch-size 64
+```
 
-## 本地运行与复现说明
+### 方式 B：本地电脑（Windows / Mac / Linux）
+```bash
+git clone https://github.com/LA-ao1/henan-melody-diffusion.git
+cd henan-melody-diffusion
+pip install -r requirements.txt
 
-1. 安装依赖：
-   ```bash
-   pip install -r requirements.txt
-   ```
-2. 复现阶段二前向加噪检验与掩码样片生成：
-   ```bash
-   python3 -m melody_diffusion.preview_stage2
-   ```
-3. 复现阶段三模型结构与前反向连通性自检：
-   ```bash
-   python3 -m melody_diffusion.check_stage3
-   ```
-4. （可选）从原始数据重跑阶段一：从 [Anthology-of-Chinese-Folk-Songs (`v261104`)](https://github.com/m-july/Anthology-of-Chinese-Folk-Songs/releases/tag/v261104) 下载 `henan.jsonl` 与 `ACFS-v261103-scores-henan.zip` 放入 `data/raw/`，运行：
-   ```bash
-   python3 -m melody_diffusion.prepare_henan
-   ```
+# 启动训练（自动选择 CUDA / Apple MPS / CPU）
+python3 -m melody_diffusion.train --epochs 120 --batch-size 64
+
+# 如中途中断，可从最近检查点续训：
+python3 -m melody_diffusion.train --epochs 120 --resume checkpoints/last_model.pt
+```
+
+### 训练产物说明（保存于 `checkpoints/`）
+- `best_model.pt`：验证集 Loss 最低的最优权重（供阶段五实验加载）
+- `last_model.pt`：最新一轮权重（支持 `--resume` 断点续训）
+- `training_history.json`：完整训练/验证 Loss 与每 10 轮四维体检指标记录
+- `training_curves.png`：Loss 收敛曲线与五声纯度/非法 `HOLD` 演变曲线
+- `checkup_samples/`：每 10 轮自动采样的生成序列 `.mid`、`.wav` 音频与简谱对照 `.txt`

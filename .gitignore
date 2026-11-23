@@ -1,4 +1,5 @@
 data/raw/
+checkpoints/
 __pycache__/
 *.pyc
 .DS_Store
